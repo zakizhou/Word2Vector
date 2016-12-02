@@ -59,6 +59,17 @@ class Word2Vector(object):
             embed = tf.nn.embedding_lookup(embedding, inputs.inputs)
 
         with tf.variable_scope("output"):
+            """
+            I use fixed_unigram_candidate_sampler because not all the classes follow the zipfian distribution
+            and the whole part code is equivalent of
+            ```
+            self.__loss = tf.nn.nce_loss(projection,
+                                         bias,
+                                         inputs.inputs,
+                                         inputs.labels
+                                         sampled_values=sampled)
+            ```
+            """
             projection = tf.get_variable(name="project",
                                          shape=[vocab_size, embedding_size],
                                          initializer=tf.truncated_normal_initializer(stddev=0.05),
@@ -81,9 +92,9 @@ class Word2Vector(object):
                                                             distortion=0.75,
                                                             unigrams=unigrams)
             # projection_sampled: [num_sampled, embedding_size]
-            projection_sampled = tf.nn.embedding_lookup(projection, sampled)
+            projection_sampled = tf.nn.embedding_lookup(projection, sampled[0])
             # project_bias_sampled: [num_sampled]
-            projection_bias_sampled = tf.nn.embedding_lookup(bias, sampled)
+            projection_bias_sampled = tf.nn.embedding_lookup(bias, sampled[0])
             # [batch_size, num_sampled] = [batch_size, embedding_size] * [num_sampled, embedding_size]^T + [num_sampled]
             sampled_logits = tf.matmul(embed, projection_sampled, transpose_b=True) + projection_bias_sampled
 
